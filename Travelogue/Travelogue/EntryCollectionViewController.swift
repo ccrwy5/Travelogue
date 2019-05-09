@@ -12,13 +12,17 @@ class EntryCollectionViewController: UIViewController {
    
     @IBOutlet weak var entriesTableView: UITableView!
     
+    let dateformatter = DateFormatter()
+    
+    
     var trip: Trip?
     var entry: Entry?
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Do any additional setup after loading the view.
+        dateformatter.dateFormat = "MMM dd, yyyy, h:mm a"
+
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -38,6 +42,22 @@ class EntryCollectionViewController: UIViewController {
         
     }
     
+    func deleteEntry(at indexPath: IndexPath){
+        guard let entry = trip?.entries?[indexPath.row],
+            let managedContext = entry.managedObjectContext else {
+                return
+        }
+        managedContext.delete(entry)
+        
+        do{
+            try managedContext.save()
+            entriesTableView.deleteRows(at: [indexPath], with: .automatic)
+        }catch{
+            print("Could not delete entry")
+            entriesTableView.reloadRows(at: [indexPath], with: .automatic)
+        }
+    }
+    
 }
 
 extension EntryCollectionViewController: UITableViewDataSource {
@@ -49,10 +69,20 @@ extension EntryCollectionViewController: UITableViewDataSource {
         let cell = entriesTableView.dequeueReusableCell(withIdentifier: "entryCell", for: indexPath)
        
         if let entry = trip?.entries?[indexPath.row]{
+            
+            
+            let dateString = dateformatter.string(from: entry.date!)
             cell.textLabel?.text = entry.title
+            cell.detailTextLabel?.text = dateString
         }
         
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete{
+            deleteEntry(at: indexPath)
+        }
     }
 }
 
